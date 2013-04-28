@@ -1,24 +1,32 @@
 #!/bin/bash
-INPUT=$1
 PAGES=$(pdfinfo ${INPUT}.pdf | grep Pages | cut -d ":" -f 2 | sed 's/ //g')
-i=1
-params=""
-mkdir tmp
-pdfcrop --bbox '120 465 475 730' $INPUT.pdf ./tmp/${INPUT}_A.pdf
-pdfcrop --bbox '120 115 475 380' $INPUT.pdf ./tmp/${INPUT}_B.pdf
-cd tmp
-while [ $i -lt $PAGES ]; do
-    pdftk A=${INPUT}_A.pdf B=${INPUT}_B.pdf cat A$i B$i output ${INPUT}_part_${i}.pdf
-    i=$[$i+1]
-done
-i=1
-while [ $i -lt $PAGES ]; do
-    params="$params ${INPUT}_part_${i}.pdf"
-    i=$[$i+1]
-done
-pdftk $params cat output ${INPUT}_kindle.pdf
-cd ..
-mv ./tmp/${INPUT}_kindle.pdf ${INPUT}_tmp.pdf
-pdftk ${INPUT}_tmp.pdf cat 1-endW output ${INPUT}_kindle.pdf
-rm ${INPUT}_tmp.pdf
-rm -r tmp
+INPUT=$(basename $1 .pdf)
+
+# Bounding box parameter sequence
+#
+# Page:
+# -----------
+#   |   |   |
+#-4-|---|-- |
+#   1 # 3   |
+#-2-|---|-- |
+#   |   |   |
+# -----------
+
+#1. dia
+pdfcrop --bbox '70 568 286 728' $1 outA.pdf
+#2. dia
+pdfcrop --bbox '310 568 526 728' $1 outB.pdf
+#3. dia
+pdfcrop --bbox '70 342 286 502' $1 outC.pdf
+#4. dia
+pdfcrop --bbox '310 342 526 502' $1 outD.pdf
+#5. dia
+pdfcrop --bbox '70 116 286 276' $1 outE.pdf
+#5. dia
+pdfcrop --bbox '310 116 526 276' $1 outF.pdf
+
+pdftk A=outA.pdf B=outB.pdf C=outC.pdf D=outD.pdf E=outE.pdf F=outF.pdf shuffle A B C D E F output ${INPUT}_simple.pdf
+pdftk ${INPUT}_simple.pdf cat 1-endW output ${INPUT}_kindle.pdf
+rm -rf out*.pdf
+
